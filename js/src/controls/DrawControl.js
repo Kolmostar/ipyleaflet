@@ -35,35 +35,34 @@ export class LeafletDrawControlView extends control.LeafletControlView {
     this.map_view = this.options.map_view;
   }
 
+  layer_to_json(layer) {
+    let res = {}
+    if (layer instanceof L.Circle) {
+      res.type = 'Circle';
+      res.center = layer.getLatLng();
+      res.radius = layer.getRadius();
+    } else if (layer instanceof L.Rectangle) {
+      res.type = 'Rectangle';
+      res.bounds = layer.getBounds();
+    } else if (layer instanceof L.Marker) {
+      res.type = 'Marker';
+      res.position = layer.getLatLng();
+    }
+    return res;
+  }
+
   create_obj() {
-    this.feature_group = L.geoJson([],{
-      style: function (feature) {
-        return feature.properties.style;
-      }
-    });
-    this.data_to_layers();
+    this.feature_group = L.featureGroup()
     this.map_view.obj.addLayer(this.feature_group);
-    var polyline = this.model.get('polyline');
-    if (!Object.keys(polyline).length) {
-      polyline = false;
-    }
-    var polygon = this.model.get('polygon');
-    if (!Object.keys(polygon).length) {
-      polygon = false;
-    }
-    var circle = this.model.get('circle');
+    let circle = this.model.get('circle');
     if (!Object.keys(circle).length) {
       circle = false;
     }
-    var circlemarker = this.model.get('circlemarker');
-    if (!Object.keys(circlemarker).length) {
-      circlemarker = false;
-    }
-    var rectangle = this.model.get('rectangle');
+    let rectangle = this.model.get('rectangle');
     if (!Object.keys(rectangle).length) {
       rectangle = false;
     }
-    var marker = this.model.get('marker');
+    let marker = this.model.get('marker');
     if (!Object.keys(marker).length) {
       marker = false;
     }
@@ -75,48 +74,41 @@ export class LeafletDrawControlView extends control.LeafletControlView {
         remove: this.model.get('remove')
       },
       draw: {
-        polyline: polyline,
-        polygon: polygon,
+        polyline: false,
+        polygon: false,
         circle: circle,
-        circlemarker: circlemarker,
+        circlemarker: false,
         rectangle: rectangle,
         marker: marker
       }
     });
-    this.map_view.obj.on('draw:created', e => {
-      var layer = e.layer;
-      var geo_json = layer.toGeoJSON();
-      geo_json.properties.style = layer.options;
+    this.map_view.obj.on(L.Draw.Event.CREATED, e => {
+      let layer = e.layer;
       this.send({
         event: 'draw:created',
-        geo_json: geo_json
+        geo_json: this.layer_to_json(layer)
       });
       this.feature_group.addLayer(layer);
-      this.layers_to_data();
     });
-    this.map_view.obj.on('draw:edited', e => {
-      var layers = e.layers;
+    this.map_view.obj.on(L.Draw.Event.EDITED, e => {
+      let layers = e.layers;
       layers.eachLayer(layer => {
-        var geo_json = layer.toGeoJSON();
-        geo_json.properties.style = layer.options;
         this.send({
           event: 'draw:edited',
-          geo_json: geo_json
+          geo_json: layer.toGeoJSON()
         });
       });
-      this.layers_to_data();
     });
-    this.map_view.obj.on('draw:deleted', e => {
-      var layers = e.layers;
+    this.map_view.obj.on(L.Draw.Event.DELETED, e => {
+      let layers = e.layers;
       layers.eachLayer(layer => {
-        var geo_json = layer.toGeoJSON();
+        let geo_json = layer.toGeoJSON();
         geo_json.properties.style = layer.options;
         this.send({
           event: 'draw:deleted',
-          geo_json: geo_json
+          geo_json: this.layer_to_json(layer)
         });
       });
-      this.layers_to_data();
     });
     this.model.on('msg:custom', this.handle_message.bind(this));
     this.model.on('change:data', this.data_to_layers.bind(this));
