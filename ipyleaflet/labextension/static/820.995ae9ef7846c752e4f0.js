@@ -1,0 +1,1 @@
+(self.webpackChunkjupyter_leaflet=self.webpackChunkjupyter_leaflet||[]).push([[820],{8820:(e,t,r)=>{var a=r(44),s=r(1037);e.exports={id:"jupyter.extensions.jupyter-leaflet",requires:[s.IJupyterWidgetRegistry],activate:function(e,t){t.registerWidget({name:"jupyter-leaflet",version:a.version,exports:a})},autoStart:!0}}}]);
